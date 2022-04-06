@@ -1,0 +1,10 @@
+https://data.world/cityofaustin/3ebq-e9iz/workspace/intro
+
+https://github.com/ikatsov/tensor-house/blob/master/pricing/dynamic-pricing-thompson.ipynb
+
+https://medium.com/total-data-science/how-machine-learning-is-helping-in-providing-dynamic-pricing-7efdb8af9083
+
+https://www.semanticscholar.org/paper/Thompson-Sampling-for-Dynamic-Pricing-Ganti-Sustik/c98c2e032377cd4b308bb5e468737e8f86d39876
+
+https://arxiv.org/pdf/1802.03050.pdf
+
