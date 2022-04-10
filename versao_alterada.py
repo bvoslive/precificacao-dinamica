@@ -7,15 +7,16 @@ import scipy.stats as stats
 import matplotlib
 from matplotlib import pyplot as plt
 import matplotlib.animation as animation
+import pandas as pd
+import seaborn as sns
 
 # ESTABELECENDO PARÂMETROS
 
 prices = [1.99, 2.49, 2.99, 3.49, 3.99, 4.49]
 
 # Hidden (true) demand parameters - a linear demans function is assumed
-demand_a = 150
+demand_a = 50
 demand_b = 2
-
 
 
 
@@ -24,32 +25,36 @@ demand_b = 2
 # α = parâmetro de forma - Para valores de α muito altos, a distribuição gamma tende à Gaussiana
 # β = parâmetro de escala - tem a função de ESTICAR OU ENCOLHER
 
-teta = []
+
+colunas = ['price', 'demanda', 'alpha', 'beta', 'mean']
+teta = pd.DataFrame(columns = colunas)
 for p in prices:
-    teta.append({'price': p, 'alpha': 30.00, 'beta': 1.00, 'mean': 30.00})
+    teta = teta.append(pd.Series([p, None, 30.00, 1.00, 30.00], index=colunas), ignore_index=True)
 
 
 # PREDIÇÃO DE DEMANDA
-def gamma(alpha, beta):
-    shape = alpha
-    scale = 1/beta
-    return np.random.gamma(shape, scale)
+def gamma(df):
+    
+    shape = df['alpha']
+    scale = 1/df['beta']
+    result_dist_gama = np.random.gamma(shape, scale)
+    return result_dist_gama
 
 
 
 
+demanda_observada = 50
+estoque = 40
 
-
-T = 50
+T = 60
 history = []
 for t in range(0, T):              # simulation loop
 
     # MODELANDO A DEMANDA
-    demands = list(map(lambda v: gamma(v['alpha'], v['beta']), teta))
+    demands = gamma(teta)
+
     print(tabulate(np.array(teta), tablefmt="fancy_grid"))
     print("demands = ", np.array(demands))
-
-    estoque = 1000
 
     # RECEITA
     revenues = np.multiply(prices, demands)
@@ -91,9 +96,7 @@ for t in range(0, T):              # simulation loop
     #valor das variáveis de decisão
     price_probs = np.array(res.x).reshape(1, L).flatten()
 
-
     #np.sum(price_probs)
-
 
     print(demands)
     print(revenues)
@@ -103,29 +106,66 @@ for t in range(0, T):              # simulation loop
     #price_index_t = np.random.choice(len(prices), 1, p=price_probs)[0]
 
     price_index_t = random.choices(range(len(prices)), weights = price_probs, k = 1)[0]
-
     preco_t = prices[price_index_t]
     
     # venda sobre o preço observado e a demanda observada
     #demand = demand_a - demand_b * preco_t
 
-    demand = demand_a
-    demanda_t = np.random.poisson(demand, 1)[0]
+    demanda_t = np.random.poisson(demanda_observada, 1)[0]
 
     print('preço selecionado %.2f => demanda %.2f, receita %.2f' % (preco_t, demanda_t, demanda_t*preco_t))
-    
+
+    """
     teta_filtro = []
     for v in teta:
         teta_filtro.append(v.copy())
     history.append([preco_t, demanda_t, demanda_t*preco_t, teta_filtro])
+    """
 
-    # update model parameters
-    v = teta[price_index_t]
-    v['alpha'] = v['alpha'] + demanda_t
-    v['beta'] = v['beta'] + 1
-    v['mean'] = v['alpha'] / v['beta']
+    # ATUALIZANDO TETA
     
-    print("")
+    teta['demanda'][price_index_t] = demanda_t
+    teta['alpha'][price_index_t] += demanda_t
+    teta['beta'][price_index_t] += 1
+    teta['mean'][price_index_t] = teta['alpha'][price_index_t] / teta['beta'][price_index_t]
+
+
+
+# IMPRIMINDO HISTORIA
+
+df_demanda = teta['demanda']
+df_alpha = teta['alpha']
+df_beta = teta['beta']
+
+
+
+# DEMANDA
+distribuicoes_alpha = [np.random.normal(valores[2], valores[3], int(valores[1])) for valores in teta.values]
+
+
+for i, distribuicao in enumerate(distribuicoes_alpha):
+    sns.distplot(distribuicao, label=str(teta['price'][i]))
+plt.legend()
+plt.show()
+
+
+# RECEITA
+distribuicoes_receita = [np.random.normal(valores[0] * valores[2], valores[3], int(valores[1])) for valores in teta.values]
+
+for i, distribuicao in enumerate(distribuicoes_receita):
+    sns.distplot(distribuicao, label=str(teta['price'][i]))
+plt.legend()
+plt.show()
+
+
+
+
+
+
+
+
+
+distribuicoes[0]
 
 
 
@@ -140,7 +180,7 @@ for i, params in enumerate(history[43][3]):
     y = stats.gamma.pdf(x, a=params['alpha'], scale=1.0/params['beta']) 
     plt.plot(x, y, "-", label='price %.2f' % params['price'])
 
-
+len(y)
 
 
 x = np.linspace(30, 110, 200) 
@@ -157,109 +197,6 @@ plt.show()
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# -----> INSIGHTS <-----
-
-# GERAL
-prices = [h[0] for h in history]
-demands = [h[1] for h in history]
-
-
-# DEMANDA
-
-x = np.linspace(0, 60, 200) 
-
-t = 48
-
-
-plt.xlabel('Demand')
-plt.ylabel('Demand PDF')
-plt.title('Demand PDFs for different prices')
-x = np.linspace(0, 250, 200)
-
-for k in range(5):
-    for i, params in enumerate(history[len()][3]):
-        y = stats.gamma.pdf(x, a=params['alpha'], scale=1.0/params['beta']) 
-        plt.plot(x, y, "-", label='price %.2f' % params['price'])
-
-plt.show()
-
-
-
-
-
-
-
-len(history)
-
-
-
-
-
-
-
-
-
-
-
-params['alpha']
-
-
-params['beta']
-
-
-# FAZER AQUI O BOXPLOT
-
-history[48][3][5]
-
-
-
-import scipy
-scipy.stats.gamma.pdf(4, 3)
-
-
-
-
-
-
-
-
-
-
-import seaborn
-
-
-demand_a = 57
-demand_b = 7
-
-price = 4.99
-
-def sample_demand(price):
-    demand = demand_a - demand_b * price
-    return np.random.poisson(demand, 100)
-
-
-distribuicao = sample_demand(8)
-
-
-sns.distplot(distribuicao)
-plt.show()
 
 
 
