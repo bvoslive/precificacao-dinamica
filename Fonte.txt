@@ -8,3 +8,6 @@ https://www.semanticscholar.org/paper/Thompson-Sampling-for-Dynamic-Pricing-Gant
 
 https://arxiv.org/pdf/1802.03050.pdf
 
+--------------------------
+
+http://dca.iag.usp.br/material/morales/Climatologia1/Aula_5_Distribui%E7%F5esdeProbabilidade_II_10-06-2010.pdf

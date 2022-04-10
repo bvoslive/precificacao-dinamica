@@ -1,0 +1,6 @@
+From a practical standpoint, estimating demand
+forecasts and elasticity is not easy. Price elasticity of an item reflects how the demand
+changes when the price of an item changes. If the price of an item does not change
+often (a typical case in e-commerce) then it becomes very hard to estimate the price
+elasticity, which can in turn lead to fewer price changes, and sub-optimal price changes.
+Moreover, due to the poor estimation of elasticities, there is high uncertainty in elasticity estimates.
