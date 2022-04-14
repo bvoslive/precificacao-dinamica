@@ -20,71 +20,75 @@ prices = [1.99, 2.49, 2.99, 3.49, 3.99, 4.49]
 
 # Hidden (true) demand parameters - a linear demans function is assumed
 demand_a = 50
-demand_b = 2
+demand_b = 7
 
 # prior distribution for each price - gamma(α, β)
 
 # α = parâmetro de forma - Para valores de α muito altos, a distribuição gamma tende à Gaussiana
 # β = parâmetro de escala - tem a função de ESTICAR OU ENCOLHER
 
-"""
+
 colunas = ['price', 'demanda', 'alpha', 'beta', 'mean']
 teta = pd.DataFrame(columns = colunas)
 for p in prices:
     teta = teta.append(pd.Series([p, None, 30.00, 1.00, 30.00], index=colunas), ignore_index=True)
+
+
+
+
+
+
+
+
+
 """
-
-
 teta = []
 for p in prices:
     teta.append({'price': p, 'alpha': 30.00, 'beta': 1.00, 'mean': 30.00})
 
-
-
-
-
-
-
 """
+
+
+df = teta.copy()
+
 # PREDIÇÃO DE DEMANDA
 def gamma(df):
     
-    shape = df['alpha']
-    scale = 1/df['beta']
+    shape = np.array(df['alpha'])
+    scale = np.array(1/df['beta'])
 
     return np.random.gamma(shape, scale)
+
+
+
+
+
 """
-
-
 def gamma(alpha, beta):
     shape = alpha
     scale = 1/beta
     return np.random.gamma(shape, scale)
+"""
 
 
 
 
-T = 50
+T = 80
 history = []
 for t in range(0, T):              # simulation loop
 
     # MODELANDO A DEMANDA
-    #demands = gamma(teta)
-    demands = list(map(lambda v: gamma(v['alpha'], v['beta']), teta))
+    demands = gamma(teta)
+    #demands = list(map(lambda v: gamma(v['alpha'], v['beta']), teta))
 
 
     print(tabulate(np.array(teta), tablefmt="fancy_grid"))
-    print("demands = ", np.array(demands))
+    #print("demands = ", np.array(demands))
 
     # RECEITA
     revenues = np.multiply(prices, demands)
     
     
-    L = len(prices)
-    M = np.full([1, L], 1)
-    B = [[1]]
-    Df = [demands]
-
     """
     sobre c ser negativo:
     Como as elasticidades-preço são negativas, o problema de otimização acima é maximizar
@@ -93,8 +97,13 @@ for t in range(0, T):              # simulation loop
     """
 
 
-    demanda_observada = 30
-    estoque = 150
+    L = len(prices)
+    M = np.full([1, L], 1)
+    B = [[1]]
+    Df = [demands]
+
+    demanda_observada = 43
+    estoque = 60
 
     # OTIMIZADOR
     res = linprog(
@@ -112,7 +121,7 @@ for t in range(0, T):              # simulation loop
         A_ub=Df,
 
         # estoque
-        b_ub=np.array([60]),
+        b_ub=np.array([estoque]),
 
         # sequência de pares (min, max) para cada elemento em x
         bounds=(0, None))
@@ -128,8 +137,8 @@ for t in range(0, T):              # simulation loop
     # seleção aleatória de um preço
     #price_index_t = np.random.choice(len(prices), 1, p=price_probs)[0]
 
-    #price_index_t = random.choices(range(len(prices)), weights = price_probs, k = 1)[0]
-    price_index_t = np.random.choice(len(prices), 1, p=price_probs)[0]
+    price_index_t = random.choices(range(len(prices)), weights = price_probs, k = 1)[0]
+    #price_index_t = np.random.choice(len(prices), 1, p=price_probs)[0]
     
 
     preco_t = prices[price_index_t]
@@ -137,26 +146,23 @@ for t in range(0, T):              # simulation loop
     # venda sobre o preço observado e a demanda observada
     #demand = demand_a - demand_b * preco_t
 
-    demanda_t = np.random.poisson((demanda_observada - 7)* preco_t, 1)[0]
+    #demanda_t = np.random.poisson(demanda_observada* preco_t, 1)[0]
 
-    print('preço selecionado %.2f => demanda %.2f, receita %.2f' % (preco_t, demanda_t, demanda_t*preco_t))
+
+    # sell at the selected price and observe demand
+    demand = demand_a - demand_b * preco_t
+    demand_t = np.random.poisson(demand, 1)[0]
+
+
+    print('preço selecionado %.2f => demanda %.2f, receita %.2f' % (preco_t, demand_t, demand_t*preco_t))
 
 
     # ATUALIZANDO TETA
-    """
-    teta['demanda'][price_index_t] = demanda_t
-    teta['alpha'][price_index_t] += demanda_t
+ 
+    teta['demanda'][price_index_t] = demand_t
+    teta['alpha'][price_index_t] = teta['alpha'][price_index_t] + demand_t
     teta['beta'][price_index_t] += 1
     teta['mean'][price_index_t] = teta['alpha'][price_index_t] / teta['beta'][price_index_t]
-    """
-
-
-    teta[price_index_t]['demanda'] = demanda_t
-    teta[price_index_t]['alpha'] += demanda_t
-    teta[price_index_t]['beta'] += 1
-    teta[price_index_t]['mean'] = teta[price_index_t]['alpha'] / teta[price_index_t]['beta']
-
-
 
     history.append(teta)
 
@@ -169,22 +175,42 @@ for t in range(0, T):              # simulation loop
 
 
 
+
+
+
 # IMPRIMINDO HISTORIA
 
-df_demanda = teta['demanda']
-df_alpha = teta['alpha']
-df_beta = teta['beta']
+df_demanda = history[-1]['demanda']
+df_alpha = history[-1]['alpha']
+df_beta = history[-1]['beta']
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 # DEMANDA
-distribuicoes_alpha = [np.random.normal(valores[2], valores[3], int(valores[1])) for valores in teta.values]
+distribuicoes_alpha = [np.random.normal(valores[2], valores[3], int(valores[0])) for valores in teta.values]
 
 
-for i, distribuicao in enumerate(distribuicoes_alpha):
-    sns.distplot(distribuicao, label=str(teta['price'][i]))
-plt.title('Demanda')
-plt.legend()
+
+for i in range(len(df_alpha)):
+    sns.distplot(np.random.normal(df_alpha[i], df_beta[i], 20))
 plt.show()
+
+
+
+
+
+
 
 
 # RECEITA
@@ -194,15 +220,6 @@ for i, distribuicao in enumerate(distribuicoes_receita):
     sns.distplot(distribuicao, label=str(teta['price'][i]))
 plt.legend()
 plt.show()
-
-
-
-
-
-
-
-
-
 
 
 
