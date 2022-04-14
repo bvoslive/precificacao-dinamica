@@ -16,7 +16,7 @@ import seaborn as sns
 np.set_printoptions(precision=2)
 
 
-prices = [1.99, 2.49, 2.99, 3.49, 3.99, 4.49]
+prices = [1.99, 2.49, 2.99, 3.49, 3.99, 4.49, 6.49]
 
 # Hidden (true) demand parameters - a linear demans function is assumed
 demand_a = 50
@@ -36,7 +36,13 @@ for p in prices:
 
 
 
+colunas = ['price', 'demanda', 'alpha', 'beta', 'mean']
 
+
+
+teta = []
+for p in prices:
+    teta.append(np.array([p, None, 30.00, 1.00, 30.00]))
 
 
 
@@ -49,15 +55,21 @@ for p in prices:
 """
 
 
-df = teta.copy()
+#df = teta.copy()
 
 # PREDIÇÃO DE DEMANDA
+
+
+df = teta.copy()
+
 def gamma(df):
     
-    shape = np.array(df['alpha'])
-    scale = np.array(1/df['beta'])
+    shape = np.array([linha[2] for linha in df])
+    scale = 1/np.array([linha[3] for linha in df])
 
     return np.random.gamma(shape, scale)
+
+
 
 
 
@@ -73,7 +85,29 @@ def gamma(alpha, beta):
 
 
 
-T = 80
+def optimal_price_probabilities(prices, demands, inventory):   
+    revenues = np.multiply(prices, demands)
+    
+    L = len(prices)
+    M = np.full([1, L], 1)
+    B = [[1]]
+    Df = [demands]
+
+    res = linprog(-np.array(revenues).flatten(), 
+                  A_eq=M, 
+                  b_eq=B, 
+                  A_ub=Df, 
+                  b_ub=np.array([inventory]), 
+                  bounds=(0, None))
+
+    price_prob = np.array(res.x).reshape(1, L).flatten()
+    return price_prob
+
+
+
+
+
+T = 100
 history = []
 for t in range(0, T):              # simulation loop
 
@@ -96,7 +130,7 @@ for t in range(0, T):              # simulation loop
     problema que pode ser resolvido usando técnicas padrão Bertsekas & Scientific
     """
 
-
+    """
     L = len(prices)
     M = np.full([1, L], 1)
     B = [[1]]
@@ -125,9 +159,9 @@ for t in range(0, T):              # simulation loop
 
         # sequência de pares (min, max) para cada elemento em x
         bounds=(0, None))
-
+    """
     #valor das variáveis de decisão
-    price_probs = np.array(res.x).reshape(1, L).flatten()
+    price_probs = optimal_price_probabilities(prices, demands, 60)
 
 
     print(demands)
@@ -151,7 +185,7 @@ for t in range(0, T):              # simulation loop
 
     # sell at the selected price and observe demand
     demand = demand_a - demand_b * preco_t
-    demand_t = np.random.poisson(demand, 1)[0]
+    demand_t = np.random.poisson(int(demand), 1)[0]
 
 
     print('preço selecionado %.2f => demanda %.2f, receita %.2f' % (preco_t, demand_t, demand_t*preco_t))
@@ -159,10 +193,12 @@ for t in range(0, T):              # simulation loop
 
     # ATUALIZANDO TETA
  
-    teta['demanda'][price_index_t] = demand_t
-    teta['alpha'][price_index_t] = teta['alpha'][price_index_t] + demand_t
-    teta['beta'][price_index_t] += 1
-    teta['mean'][price_index_t] = teta['alpha'][price_index_t] / teta['beta'][price_index_t]
+
+    teta[price_index_t][1] = demand_t
+    teta[price_index_t][2] = teta[price_index_t][2] + demand_t
+    teta[price_index_t][3] += 1
+    teta[price_index_t][4] = teta[price_index_t][2] / teta[price_index_t][3]
+
 
     history.append(teta)
 
@@ -172,6 +208,12 @@ for t in range(0, T):              # simulation loop
 
 
 
+
+
+teta['demanda'][price_index_t] = demand_t
+teta['alpha'][price_index_t] = teta['alpha'][price_index_t] + demand_t
+teta['beta'][price_index_t] += 1
+teta['mean'][price_index_t] = teta['alpha'][price_index_t] / teta['beta'][price_index_t]
 
 
 
@@ -205,9 +247,6 @@ distribuicoes_alpha = [np.random.normal(valores[2], valores[3], int(valores[0]))
 for i in range(len(df_alpha)):
     sns.distplot(np.random.normal(df_alpha[i], df_beta[i], 20))
 plt.show()
-
-
-
 
 
 

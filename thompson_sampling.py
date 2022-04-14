@@ -67,11 +67,11 @@ def sample_demand(price):
     return np.random.poisson(demand, 1)[0]
 
 
+
+
+
 def sample_demands_from_model(θ):
     return list(map(lambda v: gamma(v['alpha'], v['beta']), θ))
-
-
-
 
 
 
@@ -84,7 +84,7 @@ for t in range(0, T):              # simulation loop
     
     print("demands = ", np.array(demands))
     
-    price_probs = optimal_price_probabilities(prices, demands, 60)
+    price_probs = optimal_price_probabilities(prices, demands, 800)
     
     # select one best price
     price_index_t = np.random.choice(len(prices), 1, p=price_probs)[0]
@@ -95,19 +95,17 @@ for t in range(0, T):              # simulation loop
     print('selected price %.2f => demand %.2f, revenue %.2f' % (price_t, demand_t, demand_t*price_t))
     
     theta_trace = []
-    for v in θ:
-        theta_trace.append(v.copy())
+    for procurando in θ:
+        theta_trace.append(procurando.copy())
     history.append([price_t, demand_t, demand_t*price_t, theta_trace])
 
     # update model parameters
-    v = θ[price_index_t]
-    v['alpha'] = v['alpha'] + demand_t
-    v['beta'] = v['beta'] + 1
-    v['mean'] = v['alpha'] / v['beta']
+    procurando = θ[price_index_t]
+    procurando['alpha'] = procurando['alpha'] + demand_t
+    procurando['beta'] = procurando['beta'] + 1
+    procurando['mean'] = procurando['alpha'] / procurando['beta']
     
     print("")
-
-
 
 
 
