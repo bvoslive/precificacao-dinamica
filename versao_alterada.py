@@ -16,11 +16,15 @@ import seaborn as sns
 np.set_printoptions(precision=2)
 
 
-prices = [1.99, 2.49, 2.99, 3.49, 3.99, 4.49, 6.49]
+
+prices = [1.99, 2.49, 2.99, 3.49, 3.99, 4.49, 6.49, 20]
+demanda_observada = prices.copy()
+
+
 
 # Hidden (true) demand parameters - a linear demans function is assumed
 demand_a = 50
-demand_b = 7
+demand_b = 21
 
 # prior distribution for each price - gamma(α, β)
 
@@ -65,11 +69,9 @@ df = teta.copy()
 def gamma(df):
     
     shape = np.array([linha[2] for linha in df])
-    scale = 1/np.array([linha[3] for linha in df])
+    scale = np.array([linha[3] for linha in df])
 
     return np.random.gamma(shape, scale)
-
-
 
 
 
@@ -85,7 +87,16 @@ def gamma(alpha, beta):
 
 
 
-def optimal_price_probabilities(prices, demands, inventory):   
+def optimal_price_probabilities(prices, demands, inventory): 
+
+
+    """
+    sobre c ser negativo:
+    Como as elasticidades-preço são negativas, o problema de otimização acima é maximizar
+    uma função côncava sujeita a restrições convexas. Portanto, é uma otimização convexa
+    problema que pode ser resolvido usando técnicas padrão Bertsekas & Scientific
+    """
+
     revenues = np.multiply(prices, demands)
     
     L = len(prices)
@@ -107,14 +118,16 @@ def optimal_price_probabilities(prices, demands, inventory):
 
 
 
-T = 100
+
+T = 50
 history = []
 for t in range(0, T):              # simulation loop
 
     # MODELANDO A DEMANDA
     demands = gamma(teta)
-    #demands = list(map(lambda v: gamma(v['alpha'], v['beta']), teta))
+    demands = demands * prices
 
+    #demands = list(map(lambda v: gamma(v['alpha'], v['beta']), teta))
 
     print(tabulate(np.array(teta), tablefmt="fancy_grid"))
     #print("demands = ", np.array(demands))
@@ -123,12 +136,6 @@ for t in range(0, T):              # simulation loop
     revenues = np.multiply(prices, demands)
     
     
-    """
-    sobre c ser negativo:
-    Como as elasticidades-preço são negativas, o problema de otimização acima é maximizar
-    uma função côncava sujeita a restrições convexas. Portanto, é uma otimização convexa
-    problema que pode ser resolvido usando técnicas padrão Bertsekas & Scientific
-    """
 
     """
     L = len(prices)
@@ -161,7 +168,7 @@ for t in range(0, T):              # simulation loop
         bounds=(0, None))
     """
     #valor das variáveis de decisão
-    price_probs = optimal_price_probabilities(prices, demands, 60)
+    price_probs = optimal_price_probabilities(prices, demands, 90)
 
 
     print(demands)
@@ -174,7 +181,6 @@ for t in range(0, T):              # simulation loop
     price_index_t = random.choices(range(len(prices)), weights = price_probs, k = 1)[0]
     #price_index_t = np.random.choice(len(prices), 1, p=price_probs)[0]
     
-
     preco_t = prices[price_index_t]
     
     # venda sobre o preço observado e a demanda observada
@@ -184,19 +190,17 @@ for t in range(0, T):              # simulation loop
 
 
     # sell at the selected price and observe demand
-    demand = demand_a - demand_b * preco_t
-    demand_t = np.random.poisson(int(demand), 1)[0]
+    demand = 2 * preco_t
+    demand_t = np.random.poisson(demand, 1)[0]
 
 
     print('preço selecionado %.2f => demanda %.2f, receita %.2f' % (preco_t, demand_t, demand_t*preco_t))
 
 
     # ATUALIZANDO TETA
- 
-
     teta[price_index_t][1] = demand_t
     teta[price_index_t][2] = teta[price_index_t][2] + demand_t
-    teta[price_index_t][3] += 1
+    teta[price_index_t][3] += (demand_t * 0.1)
     teta[price_index_t][4] = teta[price_index_t][2] / teta[price_index_t][3]
 
 
@@ -206,14 +210,16 @@ for t in range(0, T):              # simulation loop
 
 
 
-
-
-
-
+"""
 teta['demanda'][price_index_t] = demand_t
 teta['alpha'][price_index_t] = teta['alpha'][price_index_t] + demand_t
 teta['beta'][price_index_t] += 1
 teta['mean'][price_index_t] = teta['alpha'][price_index_t] / teta['beta'][price_index_t]
+"""
+
+
+
+
 
 
 
@@ -230,23 +236,33 @@ df_beta = history[-1]['beta']
 
 
 
-
-
-
-
-
-
-
-
-
 # DEMANDA
-distribuicoes_alpha = [np.random.normal(valores[2], valores[3], int(valores[0])) for valores in teta.values]
+distribuicoes_alpha = [np.random.normal(valores[2], valores[3], 20) for valores in teta]
+
+x = np.linspace(0, 20, 3000) 
+distribuicoes_alpha = [stats.gamma.pdf(x, a=valores[2], scale=valores[3]) for valores in teta]
+
+
+x = np.linspace(0, 60, 200) 
+y = stats.gamma.pdf(x, a=teta[0][2], scale=1/teta[0][3])
 
 
 
-for i in range(len(df_alpha)):
-    sns.distplot(np.random.normal(df_alpha[i], df_beta[i], 20))
+
+
+
+
+sns.distplot(y)
 plt.show()
+
+
+
+for i, distribuicao in enumerate(distribuicoes_alpha):
+    sns.distplot(y, label=str(prices[i]))
+plt.legend()
+plt.show()
+
+
 
 
 
@@ -255,7 +271,7 @@ plt.show()
 # RECEITA
 distribuicoes_receita = [np.random.normal(valores[0] * valores[2], valores[3], int(valores[1])) for valores in teta.values]
 
-for i, distribuicao in enumerate(distribuicoes_receita):
+for i, distribuicao in enumerate(distribuicoes_alpha):
     sns.distplot(distribuicao, label=str(teta['price'][i]))
 plt.legend()
 plt.show()
