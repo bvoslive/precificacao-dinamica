@@ -17,9 +17,9 @@ demand_a = 50
 demand_b = 7
 
 # prior distribution for each price - gamma(α, β)
-θ = []
+teta = []
 for p in prices:
-    θ.append({'price': p, 'alpha': 30.00, 'beta': 1.00, 'mean': 30.00})
+    teta.append({'price': p, 'alpha': 30.00, 'beta': 1.00, 'mean': 30.00})
 
 
 def gamma(alpha, beta):
@@ -34,9 +34,9 @@ T = 50
 history = []
 for t in range(0, T):              # simulation loop
 
-    demands = list(map(lambda v: gamma(v['alpha'], v['beta']), θ))
+    demands = list(map(lambda v: gamma(v['alpha'], v['beta']), teta))
 
-    print(tabulate(np.array(θ), tablefmt="fancy_grid"))
+    print(tabulate(np.array(teta), tablefmt="fancy_grid"))
     print("demands = ", np.array(demands))
     
     inventory = 60
@@ -73,17 +73,34 @@ for t in range(0, T):              # simulation loop
     print('selected price %.2f => demand %.2f, revenue %.2f' % (price_t, demand_t, demand_t*price_t))
     
     theta_trace = []
-    for v in θ:
+    for v in teta:
         theta_trace.append(v.copy())
     history.append([price_t, demand_t, demand_t*price_t, theta_trace])
 
     # update model parameters
-    v = θ[price_index_t]
+    v = teta[price_index_t]
     v['alpha'] = v['alpha'] + demand_t
     v['beta'] = v['beta'] + 1
     v['mean'] = v['alpha'] / v['beta']
     
     print("")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

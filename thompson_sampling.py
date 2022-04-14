@@ -70,7 +70,10 @@ def sample_demand(price):
 def sample_demands_from_model(θ):
     return list(map(lambda v: gamma(v['alpha'], v['beta']), θ))
 
-sample_demands_from_model(2)
+
+
+
+
 
 
 T = 50
@@ -103,6 +106,12 @@ for t in range(0, T):              # simulation loop
     v['mean'] = v['alpha'] / v['beta']
     
     print("")
+
+
+
+
+
+
 
 
 # -----> VISUALIZAÇÃO <-----
