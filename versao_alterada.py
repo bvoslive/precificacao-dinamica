@@ -10,9 +10,13 @@ import seaborn as sns
 
 
 # ESTABELECENDO PARÂMETROS
+precos = [1.99, 2.49, 2.99, 3.49, 3.99, 5.99]
 
-prices = [1.99, 2.49, 2.99, 3.49, 3.99, 5.99]
-demanda_observada = prices[::-1]
+
+precos = [19.9, 24.9, 29.9, 34.9, 39.9, 59.9]
+
+# CRIANDO DEMANDA OBSERVADA
+demanda_observada = precos[::-1]
 demanda_observada = np.array(demanda_observada) * 5
 demanda_observada = [int(obs)*0.5 for obs in demanda_observada]
 demanda_observada[-1] = 0.5
@@ -24,24 +28,25 @@ demand_a = 50
 demand_b = 21
 
 # prior distribution for each price - gamma(α, β)
-
 # α = parâmetro de forma - Para valores de α muito altos, a distribuição gamma tende à Gaussiana
 # β = parâmetro de escala - tem a função de ESTICAR OU ENCOLHER
 
 teta = []
-for p in prices:
+for p in precos:
     # PREÇO, DEMANDA, ALPHA, BETA, MÉDIA
     teta.append(np.array([p, None, 30.00, 1.00, 30.00]))
 
 
 def gamma(df):
     
-    shape = np.array([linha[2] for linha in df])
-    scale = np.array([linha[3] for linha in df])
+    k = np.array([linha[2] for linha in df]) # shape
+    theta = np.array([linha[3] for linha in df]) # scale
 
-    return np.random.gamma(shape, scale)
+    return np.random.gamma(k, theta)
 
-def optimal_price_probabilities(prices, demands, inventory): 
+
+
+def optimal_price_probabilities(precos, demandas, estoque): 
 
     """
     sobre c ser negativo:
@@ -50,48 +55,50 @@ def optimal_price_probabilities(prices, demands, inventory):
     problema que pode ser resolvido usando técnicas padrão Bertsekas & Scientific
     """
 
-    revenues = np.multiply(prices, demands)
+    receita = np.multiply(precos, demandas)
     
-    L = len(prices)
-    M = np.full([1, L], 1)
-    B = [[1]]
-    Df = [demands]
+    #L = len(precos)
+    #M = np.full([1, L], 1)
+    #B = [[1]]
+    #Df = [demandas]
 
-    res = linprog(-np.array(revenues).flatten(), 
-                  A_eq=M, 
-                  b_eq=B, 
-                  A_ub=Df, 
-                  b_ub=np.array([inventory]), 
-                  bounds=(0, None))
+    res = linprog(
+        c = -np.array(receita).flatten(), # Os coeficientes da função objetivo linear a serem minimizados
+        A_eq = np.array([[1] * len(precos)]), # A matriz de restrição de igualdade. Cada linha de A_eq especifica os coeficientes de uma restrição de igualdade linear em x
+        b_eq = [[1]], # O vetor de restrição de igualdade. Cada elemento de A_eq @ x deve ser igual ao elemento correspondente de b_eq.
+        A_ub = [demandas], # A matriz de restrições de desigualdade. Cada linha de A_ub especifica os coeficientes de uma restrição de desigualdade linear em x.
+        b_ub = np.array([estoque]), # O vetor de restrição de desigualdade. Cada elemento representa um limite superior no valor correspondente de A_ub @ x.
+        bounds = (0, None)) # A sequence of (min, max) pairs for each element in x, defining the minimum and maximum values of that decision variable
 
-    price_prob = np.array(res.x).reshape(1, L).flatten()
+    price_prob = np.array(res.x).reshape(1, len(precos)).flatten()
     return price_prob
 
 
-T = 100
+
+T = 150
 history = []
 for t in range(0, T):              # simulation loop
 
     # MODELANDO A DEMANDA
-    demands = gamma(teta)
-    demands = demands - (demands * 0.2) + demanda_observada 
+    demandas = gamma(teta)
+    demandas = demandas - (demandas * 0.2) + demanda_observada 
 
     print(tabulate(np.array(teta), tablefmt="fancy_grid"))
     #print("demands = ", np.array(demands))
 
     # RECEITA
-    revenues = np.multiply(prices, demands)
+    revenues = np.multiply(precos, demandas)
     
     #valor das variáveis de decisão
-    price_probs = optimal_price_probabilities(prices, demands, 70)
+    price_probs = optimal_price_probabilities(precos, demandas, 70)
 
-    print('DEMANDA = ', demands)
+    print('DEMANDA = ', demandas)
     print('RECEITA = ', revenues)
     print('PROB PREÇOS = ', price_probs)
 
     # seleção aleatória de um preço
-    price_index_t = random.choices(range(len(prices)), weights = price_probs, k = 1)[0]
-    preco_t = prices[price_index_t]
+    price_index_t = random.choices(range(len(precos)), weights = price_probs, k = 1)[0]
+    preco_t = precos[price_index_t]
     
     # venda sobre o preço observado e a demanda observada
     #demand = demand_a - demand_b * preco_t
@@ -115,46 +122,28 @@ for t in range(0, T):              # simulation loop
 
 
 
-"""
-teta['demanda'][price_index_t] = demand_t
-teta['alpha'][price_index_t] = teta['alpha'][price_index_t] + demand_t
-teta['beta'][price_index_t] += 1
-teta['mean'][price_index_t] = teta['alpha'][price_index_t] / teta['beta'][price_index_t]
-"""
-
-
-
-
-
-# IMPRIMINDO HISTORIA
-
-df_demanda = history[-1]['demanda']
-df_alpha = history[-1]['alpha']
-df_beta = history[-1]['beta']
-
-
-
 
 
 # DEMANDA
-distribuicoes_alpha = [np.random.normal(valores[2], valores[3], 100) for valores in teta]
-
-
-
-
-
-
-
-
+distribuicoes_alpha = [np.random.normal(valores[2] , valores[3], 100) for valores in teta]
 
 for i, distribuicao in enumerate(distribuicoes_alpha):
-    sns.distplot(distribuicao, label=str(prices[i]))
+    sns.distplot(distribuicao, label=str(precos[i]))
 plt.legend()
 plt.show()
 
 
 
 
+
+# RECEITA
+distribuicoes_alpha = [np.random.normal(valores[2] * valores[0], valores[3] * valores[0], 100) for valores in teta]
+
+
+for i, distribuicao in enumerate(distribuicoes_alpha):
+    sns.distplot(distribuicao, label=str(precos[i]))
+plt.legend()
+plt.show()
 
 
 
@@ -167,7 +156,7 @@ plt.legend()
 plt.show()
 
 
-
+#---------------------------------------------------
 
 x = np.linspace(0, 200, 200)
 
