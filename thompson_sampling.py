@@ -6,6 +6,83 @@ import scipy.stats as stats
 import matplotlib
 from matplotlib import pyplot as plt
 import matplotlib.animation as animation
+import pandas as pd
+
+
+
+precos = []
+
+
+
+df = pd.read_csv('commodities_agrupados.csv')
+
+df.iloc[20:40]
+
+
+teste_precos = df[df['COMMODITY'] == '01005']
+
+
+
+x = [5, 20, 50, 100, 120, 150]
+y = [900, 550, 290, 220, 200, 180]
+
+
+plt.scatter(x, y)
+plt.show()
+
+poly_resultado = np.polyfit(x, y, 3)
+
+
+
+from scipy.misc import derivative
+
+def f(x, poly_resultado=poly_resultado):
+    return poly_resultado[0] / (x ** 3 ) + poly_resultado[1] / (x ** 2) + poly_resultado[2] / x + poly_resultado[3]
+
+
+price = 15
+y = f(price)
+
+
+
+
+
+alpha = derivative(f, price, dx=1e-6)
+c = y - (alpha * price)
+
+
+
+
+i = 3
+
+alpha = derivative(f, x[i])
+c = y[i] - alpha * x[i]
+
+
+
+price = x[i]
+slope = alpha * price
+demanda_poisson = c + slope
+
+
+
+
+
+
+
+from scipy.stats import linregress
+
+
+resultado = linregress(x=[20, 10], y=[200, 100])
+
+
+resultado.slope
+resultado.intercept
+
+
+
+
+
 
 np.set_printoptions(precision=2)
 
@@ -37,6 +114,12 @@ def optimal_price_probabilities(prices, demands, inventory):
 # Optimization procedure test
 prices = [1.99, 2.49, 2.99, 3.49, 3.99, 4.49]
 demands = list(map(lambda p: 50 - 7*p, prices))
+
+
+
+
+
+
 revenues = np.multiply(prices, demands)
 print(demands)
 print(revenues)
@@ -62,6 +145,7 @@ def gamma(alpha, beta):
     scale = 1/beta
     return np.random.gamma(shape, scale)
 
+
 def sample_demand(price):
     demand = demand_a - demand_b * price
     return np.random.poisson(demand, 1)[0]
@@ -70,9 +154,18 @@ def sample_demand(price):
 
 
 
+
+
+
+
+
+
+
+
+
+
 def sample_demands_from_model(θ):
     return list(map(lambda v: gamma(v['alpha'], v['beta']), θ))
-
 
 
 
@@ -106,8 +199,6 @@ for t in range(0, T):              # simulation loop
     procurando['mean'] = procurando['alpha'] / procurando['beta']
     
     print("")
-
-
 
 
 
@@ -147,7 +238,6 @@ def visualize_snapshot(t):
     plt.plot(range(0, t+1), np.array(prices)[0:t+1], 'r-') 
     plt.bar(range(0, T-1), np.pad(np.array(demands)[0:t+1], (0, T-2-t), 'constant'), 0.35, color='#9999ee')
     plt.ylim([0, 40])
-
 
 
 

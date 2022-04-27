@@ -1,7 +1,6 @@
 import numpy as np
 import pandas as pd
 
-
 arquivo_nome = 'purchase-order-quantity-price-detail-for-commodity-goods-procurements-1.csv'
 
 df = pd.read_csv(arquivo_nome)
