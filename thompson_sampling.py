@@ -7,7 +7,7 @@ import matplotlib
 from matplotlib import pyplot as plt
 import matplotlib.animation as animation
 import pandas as pd
-
+import numpy as np
 
 
 precos = []
@@ -19,13 +19,48 @@ df = pd.read_csv('commodities_agrupados.csv')
 df.iloc[20:40]
 
 
-teste_precos = df[df['COMMODITY'] == '01005']
+df['COMMODITY'].unique().tolist()[1:120]
 
 
+df['COMMODITY'].value_counts()[380:400]
+
+
+teste_precos = df[df['COMMODITY'] == '55072']
+teste_precos.sort_values('PRECO')[:50]
+
+
+teste_precos = teste_precos.drop(50640)
+teste_precos = teste_precos.drop(50648)
+
+
+teste_precos['QUANTIDADE'].mean()
+
+prices = teste_precos['PRECO'].tolist()
+
+demands_df = teste_precos['QUANTIDADE'].tolist()
+demands_df = np.array(demands_df) / 80
+
+
+
+
+
+
+plt.scatter(prices, demands_df)
+plt.show()
+
+
+
+pd.DataFrame(np.array(prices) * np.array(demands_df)).sort_values(0)
+
+
+"""
 
 x = [5, 20, 50, 100, 120, 150]
 y = [900, 550, 290, 220, 200, 180]
 
+
+
+np.random.poisson(10, 1)[0]
 
 plt.scatter(x, y)
 plt.show()
@@ -33,27 +68,48 @@ plt.show()
 poly_resultado = np.polyfit(x, y, 3)
 
 
-
 from scipy.misc import derivative
 
 def f(x, poly_resultado=poly_resultado):
-    return poly_resultado[0] / (x ** 3 ) + poly_resultado[1] / (x ** 2) + poly_resultado[2] / x + poly_resultado[3]
+    return poly_resultado[0] / (x ** 3 ) + poly_resultado[1] / (x ** 2) + poly_resultado[2] / x 
+
+
+# plot 4/(x^(1/4)) + 3/(x^(1/3)) + 2/(x^(1/2)) + 81
+
+
+def f(x, poly_resultado=poly_resultado):
+
+    
+    poly_resultado[0]
+    poly_resultado[0]
+    poly_resultado[0]
+    poly_resultado[0]
+
+
+
+-np.log(100000)
+
+
+
+price = 5
+y_k = f(price)
+
+alpha = -derivative(f, price, dx=1e-6)
+c = y_k - (alpha * price)
+
 
 
 price = 15
-y = f(price)
-
-
-
-
-
 alpha = derivative(f, price, dx=1e-6)
-c = y - (alpha * price)
 
 
+from scipy.misc import derivative
+def f(x):
+    return -x**3 - x**2
+derivative(f, 1.0, dx=1e-6)
 
 
-i = 3
+i = 1
 
 alpha = derivative(f, x[i])
 c = y[i] - alpha * x[i]
@@ -64,12 +120,6 @@ price = x[i]
 slope = alpha * price
 demanda_poisson = c + slope
 
-
-
-
-
-
-
 from scipy.stats import linregress
 
 
@@ -78,7 +128,7 @@ resultado = linregress(x=[20, 10], y=[200, 100])
 
 resultado.slope
 resultado.intercept
-
+"""
 
 
 
@@ -123,22 +173,28 @@ demands = list(map(lambda p: 50 - 7*p, prices))
 revenues = np.multiply(prices, demands)
 print(demands)
 print(revenues)
-print(optimal_price_probabilities(prices, demands, 60))
+print(optimal_price_probabilities(prices, demands, 232))
 
 
 
 # -----> ETAPA 2 <-----
 
-prices = [1.99, 2.49, 2.99, 3.49, 3.99, 4.49]
+#prices = [1.99, 2.49, 2.99, 3.49, 3.99, 4.49]
 
 # Hidden (true) demand parameters - a linear demans function is assumed
-demand_a = 50
-demand_b = 7
+#demand_a = 50
+#demand_b = 7
 
 # prior distribution for each price - gamma(α, β)
 θ = []
-for p in prices:
-    θ.append({'price': p, 'alpha': 30.00, 'beta': 1.00, 'mean': 30.00})
+for p in range(len(prices)):
+    θ.append({'price': prices[p], 'alpha': 30.00 + demands_df[p], 'beta': 1.00, 'mean': 30.00})
+
+
+
+pd.DataFrame(θ)
+
+
 
 def gamma(alpha, beta):
     shape = alpha
@@ -152,53 +208,55 @@ def sample_demand(price):
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
 def sample_demands_from_model(θ):
     return list(map(lambda v: gamma(v['alpha'], v['beta']), θ))
 
 
+import random
 
-T = 50
+T = 100
 history = []
+
 for t in range(0, T):              # simulation loop
     demands = sample_demands_from_model(θ)
     print(tabulate(np.array(θ), tablefmt="fancy_grid"))
     
     print("demands = ", np.array(demands))
     
-    price_probs = optimal_price_probabilities(prices, demands, 800)
+
+    price_probs = optimal_price_probabilities(prices, demands, np.mean(demands))
     
     # select one best price
-    price_index_t = np.random.choice(len(prices), 1, p=price_probs)[0]
+    #price_index_t = np.random.choice(len(prices), 1, p=price_probs)[0]
+
+    price_index_t = random.choices(range(len(prices)), weights = price_probs, k = 1)[0]
+
+
     price_t = prices[price_index_t]
     
     # sell at the selected price and observe demand
-    demand_t = sample_demand(price_t)
+    demand_t = demands[price_index_t]
     print('selected price %.2f => demand %.2f, revenue %.2f' % (price_t, demand_t, demand_t*price_t))
-    
-    theta_trace = []
-    for procurando in θ:
-        theta_trace.append(procurando.copy())
-    history.append([price_t, demand_t, demand_t*price_t, theta_trace])
+
 
     # update model parameters
     procurando = θ[price_index_t]
-    procurando['alpha'] = procurando['alpha'] + demand_t
-    procurando['beta'] = procurando['beta'] + 1
+    procurando['alpha'] = procurando['alpha'] + (demand_t * 0.2)
+    procurando['beta'] = procurando['beta'] + (demand_t * 0.05)
     procurando['mean'] = procurando['alpha'] / procurando['beta']
     
     print("")
+
+
+
+
+
+
+
+pd.DataFrame(history[-1])
+
+
+
 
 
 
