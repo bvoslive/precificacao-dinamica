@@ -10,14 +10,22 @@ import seaborn as sns
 
 
 # ESTABELECENDO PARÂMETROS
-precos = [1.99, 2.49, 2.99, 3.49, 3.99, 5.99]
 
-# CRIANDO DEMANDA OBSERVADA
-demanda_observada = precos[::-1]
-demanda_observada = np.array(demanda_observada) * 5
-demanda_observada = [int(obs)*0.5 for obs in demanda_observada]
-demanda_observada[-1] = 0.5
-demanda_observada = np.array(demanda_observada)
+
+df = pd.read_csv('commodities_agrupados.csv')
+
+COD_COMMODITY = '55072'
+teste_precos = df[df['COMMODITY'] == COD_COMMODITY]
+
+teste_precos = teste_precos.drop(50640)
+teste_precos = teste_precos.drop(50648)
+
+precos = teste_precos['PRECO'].tolist()
+
+demands_df = teste_precos['QUANTIDADE'].tolist()
+demands_df = np.array(demands_df) / 80
+demanda_observada = demands_df
+
 
 #------------------------------
 
@@ -61,17 +69,22 @@ demand_b = 21
 # β = parâmetro de escala - tem a função de ESTICAR OU ENCOLHER
 
 teta = []
-for p in precos:
+for p in range(len(precos)):
     # PREÇO, DEMANDA, ALPHA, BETA, MÉDIA
-    teta.append(np.array([p, None, 30.00, 1.00, 30.00]))
+    teta.append([precos[p], None, 30.00 + demands_df[p], 1.00, 30.00])
 
 
 def gamma(df):
     
     k = np.array([linha[2] for linha in df]) # forma
-    theta = np.array([linha[3] for linha in df]) # escala
+    theta = 1/np.array([linha[3] for linha in df]) # escala
 
     return np.random.gamma(k, theta)
+
+
+
+gamma(teta)
+
 
 
 
@@ -111,21 +124,13 @@ for t in range(0, T):              # simulation loop
 
     # MODELANDO A DEMANDA
     demandas = gamma(teta)
-    demandas = demandas - (demandas * 0.2) + demanda_observada 
-
-    # RECEITA
-    receitas = np.multiply(precos, demandas)
-    
 
     # quando o estoque for baixo, ele vai tentar priorizar aqueles que possuem valores mais altos
 
-    #estoque = demanda_observada.sum()
-    estoque = int(demandas[0]) + 10
 
-    price_probs = funcao_objetivo(precos, demandas, estoque)
+    price_probs = funcao_objetivo(precos, demandas, np.mean(demandas))
 
     print('DEMANDA = ', demandas)
-    print('RECEITA = ', receitas)
     print('PROB PREÇOS = ', price_probs)
 
     # seleção aleatória de um preço
@@ -133,18 +138,25 @@ for t in range(0, T):              # simulation loop
     preco_escolhido = precos[preco_index]
     
     # sell at the selected price and observe demand
-    demanda = demanda_observada[preco_index] + (0.1 * demanda_observada[preco_index])
-    demanda_escolhida = np.random.poisson(demanda, 1)[0]
+    demanda_avariar = demandas[preco_index]
+    demanda_escolhida = np.random.poisson(demanda_avariar, 1)[0]
+
+    #demanda_escolhida = demanda_observada[preco_index]
 
     print('preço selecionado %.2f => demanda %.2f, receita %.2f' % (preco_escolhido, demanda_escolhida, demanda_escolhida*preco_escolhido))
 
     # ATUALIZANDO TETA
     teta[preco_index][1] = demanda_escolhida
-    teta[preco_index][2] = teta[preco_index][2] + demanda_escolhida
-    teta[preco_index][3] += (demanda_escolhida * 0.2)
+    teta[preco_index][2] = teta[preco_index][2] + (demanda_escolhida * 0.2)
+    teta[preco_index][3] = teta[preco_index][3] + (demanda_escolhida * 0.05)
     teta[preco_index][4] = teta[preco_index][2] / teta[preco_index][3]
 
     lista_teta.append(teta)
+
+
+
+pd.DataFrame(teta)
+
 
 
 
