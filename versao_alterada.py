@@ -7,7 +7,7 @@ import scipy.stats as stats
 from matplotlib import pyplot as plt
 import pandas as pd
 import seaborn as sns
-
+from sklearn.preprocessing import MinMaxScaler
 
 # ESTABELECENDO PARÂMETROS
 
@@ -22,10 +22,46 @@ teste_precos = teste_precos.drop(50648)
 
 precos = teste_precos['PRECO'].tolist()
 
+scaler = MinMaxScaler()
+
+#precos = scaler.fit_transform(np.array(precos).reshape(-1, 1))
+#precos = [preco[0] for preco in precos]
+
+
 demands_df = teste_precos['QUANTIDADE'].tolist()
-demands_df = np.array(demands_df) / 80
+demands_df = np.array(demands_df) 
+
+
+scaler = MinMaxScaler((1, 70))
+demands_df = scaler.fit_transform(demands_df.reshape(-1, 1))
+demands_df = [demanda[0] for demanda in demands_df]
+
+
+
+
+
+
+
+sc_caler2 = StandardScaler()
+
+demands_df_norms = sc_caler2.fit_transform(np.array(demands_df).reshape(-1, 1))
+demands_df_norms = [preco[0] for preco in demands_df_norms]
+demands_df_norms = np.array(demands_df_norms)
+min_preco = demands_df_norms.min()
+min_preco = abs(min_preco)
+demands_df = demands_df_norms + min_preco + 1
+
+demands_df = demands_df * 18
+
+
+
+
 demanda_observada = demands_df
 
+
+
+plt.scatter(precos, demanda_observada)
+plt.show()
 
 #------------------------------
 
@@ -54,24 +90,10 @@ demanda_observada = np.array([int(qnt) for qnt in quantidades])
 demanda_observada = np.array([100, 200, 300, 400, 500, 600])
 
 
-np.array(precos) * np.array(demanda_observada)
+pd.Series(np.array(precos_ativar) * np.array(demanda_observada)).sort_values()
 
 
 
-
-
-# Hidden (true) demand parameters - a linear demans function is assumed
-demand_a = 50
-demand_b = 21
-
-# prior distribution for each price - gamma(α, β)
-# α = parâmetro de forma - Para valores de α muito altos, a distribuição gamma tende à Gaussiana
-# β = parâmetro de escala - tem a função de ESTICAR OU ENCOLHER
-
-teta = []
-for p in range(len(precos)):
-    # PREÇO, DEMANDA, ALPHA, BETA, MÉDIA
-    teta.append([precos[p], None, 30.00 + demands_df[p], 1.00, 30.00])
 
 
 def gamma(df):
@@ -81,9 +103,6 @@ def gamma(df):
 
     return np.random.gamma(k, theta)
 
-
-
-gamma(teta)
 
 
 
@@ -108,46 +127,95 @@ def funcao_objetivo(precos, demandas, estoque):
         c = -np.array(receita).flatten(), # Os coeficientes da função objetivo linear a serem minimizados
         A_eq = np.array([[1] * len(precos)]), # A matriz de restrição de igualdade. Cada linha de A_eq especifica os coeficientes de uma restrição de igualdade linear em x
         b_eq = [[1]], # O vetor de restrição de igualdade. Cada elemento de A_eq @ x deve ser igual ao elemento correspondente de b_eq.
-        
         A_ub = [demandas], # A matriz de restrições de desigualdade. Cada linha de A_ub especifica os coeficientes de uma restrição de desigualdade linear em x.
         b_ub = np.array([estoque]), # O vetor de restrição de desigualdade. Cada elemento representa um limite superior no valor correspondente de A_ub @ x.
-        bounds = (0, None)) # Uma sequência de pares (min, max) para cada elemento em x, definindo os valores mínimo e máximo dessa variável de decisão
+        bounds = (0.0, None)) # Uma sequência de pares (min, max) para cada elemento em x, definindo os valores mínimo e máximo dessa variável de decisão
 
     resultado = np.array(res.x).reshape(1, len(precos)).flatten()
     return resultado
 
 
 
+
+
+np.random.seed(42)
+# prior distribution for each price - gamma(α, β)
+# α = parâmetro de forma - Para valores de α muito altos, a distribuição gamma tende à Gaussiana
+# β = parâmetro de escala - tem a função de ESTICAR OU ENCOLHER
+
+teta = []
+for p in range(len(precos)):
+    # PREÇO, DEMANDA, ALPHA, BETA, MÉDIA
+    teta.append([precos[p], None, 30 + demands_df[p], 1.00, 10.00])
+
+
+pd.DataFrame(teta)
+
+
+
+plt.plot(precos_norms)
+plt.show()
+
+
+
+from sklearn.preprocessing import StandardScaler
+
+sc_caler = StandardScaler()
+
+precos_norms = sc_caler.fit_transform(np.array(precos).reshape(-1, 1))
+precos_norms = [preco[0] for preco in precos_norms]
+precos_norms = np.array(precos_norms)
+min_preco = precos_norms.min()
+min_preco = abs(min_preco)
+precos_ativar = precos_norms + min_preco + 1
+
+
+
+
+
+
 T = 100
 lista_teta = []
-for t in range(0, T):              # simulation loop
+
+lista_escolhas = []
+
+for t in range(0, T):             
 
     # MODELANDO A DEMANDA
     demandas = gamma(teta)
+    demandas = np.round(demandas, 2)
+
+    
+
+    #scaler2 = MinMaxScaler((1, 5.23869422))
+    #precos_ativar = scaler2.fit_transform(np.array(precos).reshape(-1, 1))
+    #precos_ativar = [preco[0] for preco in precos_ativar]
+
+    price_probs = precos_ativar * (demandas * 10)
 
     # quando o estoque for baixo, ele vai tentar priorizar aqueles que possuem valores mais altos
+    #price_probs = funcao_objetivo(precos_ativar, demandas, 15)
 
-
-    price_probs = funcao_objetivo(precos, demandas, np.mean(demandas))
-
-    print('DEMANDA = ', demandas)
-    print('PROB PREÇOS = ', price_probs)
+    #print('DEMANDA = ', demandas)
+    #print('PROB PREÇOS = ', price_probs)
 
     # seleção aleatória de um preço
+    
     preco_index = random.choices(range(len(precos)), weights = price_probs, k = 1)[0]
+
+    lista_escolhas.append(preco_index)
+
     preco_escolhido = precos[preco_index]
     
     # sell at the selected price and observe demand
     demanda_avariar = demandas[preco_index]
     demanda_escolhida = np.random.poisson(demanda_avariar, 1)[0]
 
-    #demanda_escolhida = demanda_observada[preco_index]
-
     print('preço selecionado %.2f => demanda %.2f, receita %.2f' % (preco_escolhido, demanda_escolhida, demanda_escolhida*preco_escolhido))
 
     # ATUALIZANDO TETA
     teta[preco_index][1] = demanda_escolhida
-    teta[preco_index][2] = teta[preco_index][2] + (demanda_escolhida * 0.2)
+    teta[preco_index][2] = teta[preco_index][2] + demanda_escolhida * 0.5
     teta[preco_index][3] = teta[preco_index][3] + (demanda_escolhida * 0.05)
     teta[preco_index][4] = teta[preco_index][2] / teta[preco_index][3]
 
@@ -155,7 +223,16 @@ for t in range(0, T):              # simulation loop
 
 
 
+
+pd.Series(lista_escolhas).value_counts()
+
+
 pd.DataFrame(teta)
+
+
+
+
+
 
 
 
@@ -167,10 +244,6 @@ for i, distribuicao in enumerate(distribuicoes_alpha):
     sns.distplot(distribuicao, label=str(precos[i]))
 plt.legend()
 plt.show()
-
-
-
-
 
 
 
