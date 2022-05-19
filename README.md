@@ -1,16 +1,16 @@
-# Detecção de Pneumonia
+# Precificação Dinâmica
 
-Este projeto faz parte do desafio do Kaggle cujo os dados estão disponíveis em https://www.kaggle.com/paultimothymooney/chest-xray-pneumonia.
+Precificação Dinâmica de commodities utilizando Thompson Sampling
 
 Clone this repo `git clone https://github.com/bvoslive/Deteccao-de-Pneumonia.git`
 
 ### Dados
 
-https://www.kaggle.com/paultimothymooney/chest-xray-pneumonia
+https://data.world/cityofaustin/3ebq-e9iz/workspace/intro
 
 ## Objetivo
 
-Este projeto tem o objetivo de criar uma Rede Neural Convolucional em conjunto com uma base de dados de amostras de imagens Raio-X contendo a região tórax para predição de pacientes com pneumonia.
+Este projeto tem o objetivo criar um algoritmo de escolher um preç
 
 --Status do Projeto: On-Hold
 
@@ -21,15 +21,11 @@ Este projeto tem o objetivo de criar uma Rede Neural Convolucional em conjunto c
 
 ## Tecnologias
 
-* Python
-* Keras
+
 
 ## Resultados
 
-* loss: 0.1805
-* accuracy: 0.9346
-* val_loss: 0.3744
-* val_accuracy: 0.8798
+
 
 ## Contato
 
