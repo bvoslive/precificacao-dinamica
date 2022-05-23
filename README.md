@@ -10,22 +10,20 @@ https://data.world/cityofaustin/3ebq-e9iz/workspace/intro
 
 ## Objetivo
 
-Este projeto tem o objetivo criar um algoritmo de escolher um preç
+Este projeto tem o objetivo de criar um algoritmo de Precificação Dinâmica utilizando o método heurístico Thompson Sampling
 
 --Status do Projeto: On-Hold
 
 ## Métodos Usados
 
-* Redes Neurais Convolucionais
-* Data Augmentation
+* Thompson Sampling
 
 ## Tecnologias
 
 
-
 ## Resultados
 
-
+O algoritmo obteve resultados aceitáveis, esperava-se que indicadores de receitas similares pudessem competir de forma mais abrangente, eliminando possíveis ruídos nos indicadores.
 
 ## Contato
 
