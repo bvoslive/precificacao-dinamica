@@ -1,6 +1,6 @@
 # Precificação Dinâmica
 
-Precificação Dinâmica de commodities utilizando Thompson Sampling
+A Precificação Dinâmica é uma estratégia de seleção de preços baseada no comportamento do consumidor e no preço de um ou mais produto(s), além da oferta e demanda, alguns fatores são levados em consideração como sazonalidade e concorrência. O Método heurístico testado, conhecido por Thompson Sampling, mostrou-se capaz de realizar a seleção de preços no produto submetido deste projeto.
 
 Clone this repo `git clone https://github.com/bvoslive/Deteccao-de-Pneumonia.git`
 
@@ -20,6 +20,8 @@ Este projeto tem o objetivo de criar um algoritmo de Precificação Dinâmica ut
 
 ## Tecnologias
 
+* Pandas
+* Seaborn
 
 ## Resultados
 
